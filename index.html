@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🎰 럭키드로우</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: #080818;
+  color: #fff;
+  font-family: 'Segoe UI', 'Apple SD Gothic Neo', sans-serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+canvas#confetti-canvas {
+  position: fixed; top: 0; left: 0;
+  width: 100%; height: 100%;
+  pointer-events: none; z-index: 9999;
+}
+
+/* ── SCREENS ── */
+.screen { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
+
+/* ── ADMIN TOGGLE ── */
+#admin-toggle {
+  position: fixed; top: 16px; right: 16px; z-index: 100;
+  background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.15);
+  color: rgba(255,255,255,.5); font-size: 20px;
+  width: 40px; height: 40px; border-radius: 50%;
+  cursor: pointer; transition: all .2s;
+  display: flex; align-items: center; justify-content: center;
+}
+#admin-toggle:hover { background: rgba(255,255,255,.18); color: #fff; }
+
+/* ── DRAW SCREEN ── */
+#screen-draw { background: radial-gradient(ellipse at 50% 0%, #1a0a3a 0%, #080818 60%); }
+
+.event-title {
+  font-size: clamp(14px, 3vw, 18px);
+  letter-spacing: 6px; text-transform: uppercase;
+  color: rgba(255,255,255,.4); margin-bottom: 8px;
+}
+
+.main-title {
+  font-size: clamp(40px, 10vw, 80px);
+  font-weight: 900; letter-spacing: 4px;
+  background: linear-gradient(135deg, #ffd700 0%, #ff9500 50%, #ff6b6b 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+  filter: drop-shadow(0 0 30px rgba(255,165,0,.4));
+  margin-bottom: 48px;
+}
+
+.slot-machine {
+  width: min(480px, 90vw); height: 120px;
+  border: 2px solid rgba(255,215,0,.3);
+  border-radius: 16px;
+  background: rgba(0,0,0,.4);
+  backdrop-filter: blur(10px);
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden; position: relative;
+  box-shadow: 0 0 40px rgba(255,165,0,.1), inset 0 0 40px rgba(0,0,0,.5);
+  margin-bottom: 40px;
+}
+.slot-machine::before, .slot-machine::after {
+  content: ''; position: absolute; left: 0; right: 0; height: 30px; z-index: 2; pointer-events: none;
+}
+.slot-machine::before { top: 0; background: linear-gradient(#000, transparent); }
+.slot-machine::after  { bottom: 0; background: linear-gradient(transparent, #000); }
+
+.slot-display {
+  text-align: center; transition: transform .1s;
+  width: 100%;
+}
+.slot-display .slot-rank {
+  font-size: 13px; letter-spacing: 4px; color: rgba(255,215,0,.6);
+  text-transform: uppercase; margin-bottom: 4px;
+}
+.slot-display .slot-name {
+  font-size: clamp(22px, 5vw, 32px); font-weight: 700;
+  background: linear-gradient(135deg, #fff 0%, rgba(255,255,255,.7) 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.slot-display .slot-idle {
+  font-size: clamp(18px, 4vw, 26px);
+  color: rgba(255,255,255,.2); font-weight: 300; letter-spacing: 2px;
+}
+
+#draw-btn {
+  width: min(300px, 80vw); height: 72px;
+  font-size: 28px; font-weight: 800; letter-spacing: 6px;
+  border: none; border-radius: 36px; cursor: pointer;
+  background: linear-gradient(135deg, #ffd700 0%, #ff9500 60%, #ff6b35 100%);
+  color: #1a0a00;
+  box-shadow: 0 8px 40px rgba(255,165,0,.5), 0 0 0 0 rgba(255,165,0,.4);
+  transition: transform .1s, box-shadow .2s;
+  animation: pulse-btn 2.5s ease-in-out infinite;
+}
+@keyframes pulse-btn {
+  0%, 100% { box-shadow: 0 8px 40px rgba(255,165,0,.5), 0 0 0 0 rgba(255,165,0,.4); }
+  50% { box-shadow: 0 8px 60px rgba(255,165,0,.7), 0 0 0 16px rgba(255,165,0,0); }
+}
+#draw-btn:hover:not(:disabled) { transform: translateY(-2px) scale(1.03); }
+#draw-btn:active:not(:disabled) { transform: scale(.97); }
+#draw-btn:disabled { opacity: .5; cursor: not-allowed; animation: none; }
+
+.prizes-remaining {
+  display: flex; flex-wrap: wrap; gap: 10px; justify-content: center;
+  margin-top: 40px; max-width: 560px;
+}
+.prize-chip {
+  padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 600;
+  border: 1px solid; display: flex; align-items: center; gap: 6px;
+  transition: opacity .3s;
+}
+.prize-chip.depleted { opacity: .25; text-decoration: line-through; }
+.prize-chip .chip-count {
+  background: rgba(0,0,0,.3); border-radius: 10px;
+  padding: 1px 6px; font-size: 11px;
+}
+
+.draw-history {
+  margin-top: 32px; max-width: 480px; width: 100%;
+  max-height: 160px; overflow-y: auto;
+}
+.draw-history h3 {
+  font-size: 11px; letter-spacing: 3px; color: rgba(255,255,255,.3);
+  text-align: center; margin-bottom: 10px;
+}
+.history-item {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,.06);
+  font-size: 13px; color: rgba(255,255,255,.5);
+}
+.history-item .h-rank { font-weight: 700; }
+.history-item .h-num { color: rgba(255,255,255,.25); font-size: 11px; margin-right: 4px; }
+
+/* ── RESULT OVERLAY ── */
+#result-overlay {
+  display: none; position: fixed; inset: 0; z-index: 500;
+  background: rgba(0,0,0,.85); backdrop-filter: blur(8px);
+  align-items: center; justify-content: center; flex-direction: column;
+  gap: 24px;
+}
+#result-overlay.show { display: flex; }
+
+.result-card {
+  text-align: center; padding: 48px 56px;
+  background: linear-gradient(135deg, rgba(255,255,255,.08), rgba(255,255,255,.03));
+  border: 1px solid rgba(255,255,255,.15);
+  border-radius: 24px;
+  animation: card-appear .4s cubic-bezier(.34,1.56,.64,1);
+  max-width: 90vw;
+}
+@keyframes card-appear {
+  from { transform: scale(.5) translateY(40px); opacity: 0; }
+  to   { transform: scale(1) translateY(0); opacity: 1; }
+}
+.result-emoji { font-size: 64px; margin-bottom: 16px; }
+.result-rank {
+  font-size: 14px; letter-spacing: 6px;
+  color: rgba(255,215,0,.7); margin-bottom: 12px;
+}
+.result-name {
+  font-size: clamp(28px, 7vw, 48px); font-weight: 900;
+  background: linear-gradient(135deg, #fff 0%, rgba(255,215,0,.9) 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 8px;
+}
+.result-subtext {
+  font-size: 14px; color: rgba(255,255,255,.4);
+}
+
+.result-next-btn {
+  padding: 14px 48px; font-size: 16px; font-weight: 700; letter-spacing: 2px;
+  border: 2px solid rgba(255,255,255,.3); background: rgba(255,255,255,.08);
+  color: #fff; border-radius: 32px; cursor: pointer; transition: all .2s;
+}
+.result-next-btn:hover { background: rgba(255,255,255,.18); border-color: rgba(255,255,255,.5); }
+
+/* ── ADMIN PANEL ── */
+#screen-admin {
+  display: none; background: #0d0d1f;
+  justify-content: flex-start; padding-top: 80px;
+}
+#screen-admin.show { display: flex; }
+
+.admin-container { width: min(700px, 96vw); }
+.admin-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 24px;
+}
+.admin-header h2 { font-size: 22px; font-weight: 700; }
+.admin-header-btns { display: flex; gap: 10px; }
+
+.btn-secondary {
+  padding: 8px 20px; border-radius: 8px; font-size: 13px; font-weight: 600;
+  cursor: pointer; transition: all .2s; border: 1px solid rgba(255,255,255,.2);
+  background: rgba(255,255,255,.07); color: #fff;
+}
+.btn-secondary:hover { background: rgba(255,255,255,.15); }
+
+.btn-danger {
+  padding: 8px 20px; border-radius: 8px; font-size: 13px; font-weight: 600;
+  cursor: pointer; transition: all .2s; border: 1px solid rgba(255,80,80,.4);
+  background: rgba(255,80,80,.1); color: #ff6b6b;
+}
+.btn-danger:hover { background: rgba(255,80,80,.25); }
+
+.btn-primary {
+  padding: 8px 20px; border-radius: 8px; font-size: 13px; font-weight: 600;
+  cursor: pointer; transition: all .2s; border: none;
+  background: linear-gradient(135deg, #ffd700, #ff9500); color: #1a0a00;
+}
+.btn-primary:hover { filter: brightness(1.1); }
+
+.prize-table { width: 100%; border-collapse: collapse; margin-bottom: 24px; }
+.prize-table th {
+  text-align: left; padding: 10px 12px; font-size: 11px; letter-spacing: 2px;
+  color: rgba(255,255,255,.35); border-bottom: 1px solid rgba(255,255,255,.08);
+  text-transform: uppercase;
+}
+.prize-table td {
+  padding: 10px 12px; border-bottom: 1px solid rgba(255,255,255,.06);
+  vertical-align: middle;
+}
+.prize-table tr:hover td { background: rgba(255,255,255,.03); }
+
+.prize-table input {
+  background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.12);
+  color: #fff; padding: 6px 10px; border-radius: 6px; font-size: 13px; width: 100%;
+  outline: none;
+}
+.prize-table input:focus { border-color: rgba(255,165,0,.5); }
+.prize-table input[type=number] { width: 70px; text-align: center; }
+
+.color-dot {
+  width: 14px; height: 14px; border-radius: 50%; display: inline-block;
+}
+
+.icon-btn {
+  background: none; border: none; cursor: pointer; padding: 4px 8px;
+  font-size: 16px; opacity: .5; transition: opacity .2s;
+}
+.icon-btn:hover { opacity: 1; }
+
+.add-prize-row {
+  display: flex; gap: 10px; align-items: center; margin-bottom: 16px;
+}
+.add-prize-row input {
+  flex: 1; background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.12);
+  color: #fff; padding: 10px 14px; border-radius: 8px; font-size: 14px; outline: none;
+}
+.add-prize-row input:focus { border-color: rgba(255,165,0,.5); }
+.add-prize-row input[type=number] { width: 80px; flex: 0; text-align: center; }
+
+.color-options { display: flex; gap: 6px; align-items: center; }
+.color-opt {
+  width: 22px; height: 22px; border-radius: 50%; cursor: pointer;
+  border: 2px solid transparent; transition: border-color .15s;
+}
+.color-opt.selected { border-color: #fff; }
+
+.admin-stats {
+  background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.08);
+  border-radius: 12px; padding: 16px 20px; margin-bottom: 24px;
+  display: flex; gap: 24px; flex-wrap: wrap;
+}
+.stat-item { text-align: center; }
+.stat-num { font-size: 28px; font-weight: 700; color: #ffd700; }
+.stat-label { font-size: 11px; color: rgba(255,255,255,.35); margin-top: 2px; letter-spacing: 1px; }
+
+.warning-text { font-size: 12px; color: rgba(255,165,0,.6); margin-top: 8px; }
+
+/* scrollbar */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,.15); border-radius: 2px; }
+</style>
+</head>
+<body>
+
+<canvas id="confetti-canvas"></canvas>
+
+<button id="admin-toggle" title="관리자 설정" onclick="toggleAdmin()">⚙️</button>
+
+<!-- ── DRAW SCREEN ── -->
+<div id="screen-draw" class="screen">
+  <div class="event-title">✨ LUCKY DRAW ✨</div>
+  <div class="main-title">럭키드로우</div>
+
+  <div class="slot-machine">
+    <div class="slot-display" id="slot-display">
+      <div class="slot-idle">버튼을 눌러 추첨하세요</div>
+    </div>
+  </div>
+
+  <button id="draw-btn" onclick="startDraw()">🎰 뽑기!</button>
+
+  <div class="prizes-remaining" id="prizes-remaining"></div>
+
+  <div class="draw-history" id="draw-history" style="display:none">
+    <h3>— 추첨 기록 —</h3>
+    <div id="history-list"></div>
+  </div>
+</div>
+
+<!-- ── RESULT OVERLAY ── -->
+<div id="result-overlay">
+  <div class="result-card" id="result-card">
+    <div class="result-emoji" id="result-emoji">🎉</div>
+    <div class="result-rank" id="result-rank">1등</div>
+    <div class="result-name" id="result-name">에어팟 프로</div>
+    <div class="result-subtext" id="result-subtext">축하합니다!</div>
+  </div>
+  <button class="result-next-btn" onclick="closeResult()">다음 추첨 →</button>
+</div>
+
+<!-- ── ADMIN PANEL ── -->
+<div id="screen-admin" class="screen">
+  <div class="admin-container">
+    <div class="admin-header">
+      <h2>🎛️ 상품 설정</h2>
+      <div class="admin-header-btns">
+        <button class="btn-danger" onclick="confirmReset()">전체 초기화</button>
+        <button class="btn-primary" onclick="toggleAdmin()">← 추첨으로 돌아가기</button>
+      </div>
+    </div>
+
+    <div class="admin-stats" id="admin-stats"></div>
+
+    <table class="prize-table" id="prize-table">
+      <thead>
+        <tr>
+          <th>색상</th>
+          <th>등수</th>
+          <th>상품명</th>
+          <th>남은 수량</th>
+          <th>총 수량</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="prize-tbody"></tbody>
+    </table>
+
+    <div style="margin-bottom:12px;font-size:12px;color:rgba(255,255,255,.4);letter-spacing:1px">+ 상품 추가</div>
+    <div class="add-prize-row" id="add-row">
+      <div class="color-options" id="new-color-opts"></div>
+      <input type="text" id="new-rank" placeholder="등수 (예: 1등)" maxlength="10" style="width:90px;flex:0">
+      <input type="text" id="new-name" placeholder="상품명">
+      <input type="number" id="new-qty" placeholder="수량" min="1" max="9999" value="1">
+      <button class="btn-primary" onclick="addPrize()">추가</button>
+    </div>
+    <div class="warning-text">⚠️ 수량을 수정하면 남은 수량에 바로 반영됩니다.</div>
+  </div>
+</div>
+
+<script>
+// ── STATE ──
+const COLORS = ['#FFD700','#C0C0C0','#CD7F32','#4FC3F7','#CE93D8','#A5D6A7','#FF8A65','#F48FB1'];
+const RANK_EMOJI = { '1등':'🥇','2등':'🥈','3등':'🥉' };
+
+let prizes = [
+  { id: 1, rank: '1등',  name: '에어팟 프로',       quantity: 1,  total: 1,  color: '#FFD700' },
+  { id: 2, rank: '2등',  name: '스타벅스 기프트카드', quantity: 3,  total: 3,  color: '#C0C0C0' },
+  { id: 3, rank: '3등',  name: '편의점 상품권',       quantity: 5,  total: 5,  color: '#CD7F32' },
+  { id: 4, rank: '참가상', name: '기념품',            quantity: 20, total: 20, color: '#4FC3F7' },
+];
+let nextId = 5;
+let history = [];
+let isDrawing = false;
+let selectedNewColor = COLORS[0];
+let drawCount = 0;
+
+// ── DRAW LOGIC ──
+function getAvailable() { return prizes.filter(p => p.quantity > 0); }
+
+function pickPrize() {
+  const avail = getAvailable();
+  if (!avail.length) return null;
+  const total = avail.reduce((s, p) => s + p.quantity, 0);
+  let r = Math.random() * total;
+  for (const p of avail) { r -= p.quantity; if (r <= 0) return p; }
+  return avail[avail.length - 1];
+}
+
+async function startDraw() {
+  if (isDrawing) return;
+  if (!getAvailable().length) { alert('🎰 모든 상품이 소진되었습니다!'); return; }
+
+  isDrawing = true;
+  document.getElementById('draw-btn').disabled = true;
+
+  const winner = pickPrize();
+  winner.quantity--;
+
+  await runSlotAnimation(winner);
+
+  showResult(winner);
+  drawCount++;
+  history.unshift({ ...winner, drawNum: drawCount });
+  updateUI();
+
+  isDrawing = false;
+  document.getElementById('draw-btn').disabled = false;
+}
+
+// slot animation: cycle through available prizes, slow and land on winner
+function runSlotAnimation(winner) {
+  return new Promise(resolve => {
+    const display = document.getElementById('slot-display');
+    const allPrizes = prizes.filter(p => p.id !== winner.id);
+    allPrizes.push(winner); // ensure winner is in pool
+
+    let elapsed = 0;
+    const duration = 2800;
+    let interval = 60;
+    let idx = 0;
+
+    function step() {
+      if (elapsed >= duration) {
+        // land on winner
+        display.innerHTML = `
+          <div class="slot-rank" style="color:${winner.color}">${winner.rank}</div>
+          <div class="slot-name">${winner.name}</div>`;
+        setTimeout(resolve, 400);
+        return;
+      }
+
+      const frac = elapsed / duration;
+      // ease-in: start fast, end slow
+      const speedMul = frac < 0.5 ? 1 : 1 + (frac - 0.5) * 8;
+      interval = Math.min(60 + speedMul * 120, 280);
+
+      const p = allPrizes[idx % allPrizes.length];
+      display.innerHTML = `
+        <div class="slot-rank" style="color:${p.color};opacity:.7">${p.rank}</div>
+        <div class="slot-name">${p.name}</div>`;
+      idx++;
+      elapsed += interval;
+      setTimeout(step, interval);
+    }
+    step();
+  });
+}
+
+// ── RESULT ──
+function showResult(p) {
+  const emoji = RANK_EMOJI[p.rank] || '🎉';
+  document.getElementById('result-emoji').textContent = emoji;
+  document.getElementById('result-rank').textContent = p.rank;
+  document.getElementById('result-rank').style.color = p.color;
+  document.getElementById('result-name').textContent = p.name;
+  document.getElementById('result-subtext').textContent = '축하합니다! 🎊';
+  document.getElementById('result-overlay').classList.add('show');
+  launchConfetti(p.color);
+}
+
+function closeResult() {
+  document.getElementById('result-overlay').classList.remove('show');
+  stopConfetti();
+}
+
+// ── UI UPDATES ──
+function updateUI() {
+  updateChips();
+  updateHistory();
+  if (document.getElementById('screen-admin').classList.contains('show')) updateAdminUI();
+}
+
+function updateChips() {
+  const container = document.getElementById('prizes-remaining');
+  container.innerHTML = prizes.map(p => `
+    <div class="prize-chip ${p.quantity === 0 ? 'depleted' : ''}"
+         style="border-color:${p.color}40;color:${p.color}">
+      ${p.rank}
+      <span class="chip-count" style="background:${p.color}20">${p.quantity}/${p.total}</span>
+    </div>`).join('');
+}
+
+function updateHistory() {
+  const el = document.getElementById('draw-history');
+  const list = document.getElementById('history-list');
+  if (!history.length) { el.style.display = 'none'; return; }
+  el.style.display = 'block';
+  list.innerHTML = history.slice(0, 10).map(h => `
+    <div class="history-item">
+      <span class="h-num">#${h.drawNum}</span>
+      <span class="h-rank" style="color:${h.color}">${h.rank}</span>
+      <span>${h.name}</span>
+    </div>`).join('');
+}
+
+// ── ADMIN ──
+function toggleAdmin() {
+  const admin = document.getElementById('screen-admin');
+  const draw  = document.getElementById('screen-draw');
+  const isAdmin = admin.classList.contains('show');
+  admin.classList.toggle('show', !isAdmin);
+  draw.style.display = isAdmin ? 'flex' : 'none';
+  if (!isAdmin) updateAdminUI();
+}
+
+function updateAdminUI() {
+  updateAdminStats();
+  renderPrizeTable();
+  renderColorOptions();
+}
+
+function updateAdminStats() {
+  const total = prizes.reduce((s, p) => s + p.total, 0);
+  const remaining = prizes.reduce((s, p) => s + p.quantity, 0);
+  document.getElementById('admin-stats').innerHTML = `
+    <div class="stat-item"><div class="stat-num">${prizes.length}</div><div class="stat-label">등수 종류</div></div>
+    <div class="stat-item"><div class="stat-num">${total}</div><div class="stat-label">총 상품 수</div></div>
+    <div class="stat-item"><div class="stat-num">${remaining}</div><div class="stat-label">남은 상품</div></div>
+    <div class="stat-item"><div class="stat-num">${history.length}</div><div class="stat-label">추첨 횟수</div></div>`;
+}
+
+function renderPrizeTable() {
+  const tbody = document.getElementById('prize-tbody');
+  tbody.innerHTML = prizes.map((p, i) => `
+    <tr data-id="${p.id}">
+      <td><span class="color-dot" style="background:${p.color}"></span></td>
+      <td><input type="text" value="${esc(p.rank)}" onchange="updatePrize(${p.id},'rank',this.value)" style="width:70px"></td>
+      <td><input type="text" value="${esc(p.name)}" onchange="updatePrize(${p.id},'name',this.value)"></td>
+      <td><input type="number" value="${p.quantity}" min="0" max="9999" onchange="updatePrize(${p.id},'quantity',+this.value)" style="width:70px"></td>
+      <td><input type="number" value="${p.total}" min="1" max="9999" onchange="updatePrize(${p.id},'total',+this.value)" style="width:70px"></td>
+      <td>
+        <button class="icon-btn" onclick="movePrize(${p.id},-1)" title="위로" ${i===0?'disabled':''}>↑</button>
+        <button class="icon-btn" onclick="movePrize(${p.id},1)" title="아래로" ${i===prizes.length-1?'disabled':''}>↓</button>
+        <button class="icon-btn" onclick="deletePrize(${p.id})" title="삭제">🗑️</button>
+      </td>
+    </tr>`).join('');
+}
+
+function renderColorOptions() {
+  const cont = document.getElementById('new-color-opts');
+  cont.innerHTML = COLORS.map(c => `
+    <div class="color-opt ${c === selectedNewColor ? 'selected' : ''}"
+         style="background:${c}" onclick="selectColor('${c}')"></div>`).join('');
+}
+
+function selectColor(c) {
+  selectedNewColor = c;
+  renderColorOptions();
+}
+
+function updatePrize(id, field, val) {
+  const p = prizes.find(x => x.id === id);
+  if (!p) return;
+  if (field === 'quantity') p.quantity = Math.max(0, Math.min(9999, val));
+  else if (field === 'total') p.total = Math.max(1, Math.min(9999, val));
+  else p[field] = val;
+  updateAdminStats();
+  updateChips();
+}
+
+function movePrize(id, dir) {
+  const i = prizes.findIndex(x => x.id === id);
+  const j = i + dir;
+  if (j < 0 || j >= prizes.length) return;
+  [prizes[i], prizes[j]] = [prizes[j], prizes[i]];
+  renderPrizeTable();
+  updateChips();
+}
+
+function deletePrize(id) {
+  if (prizes.length <= 1) { alert('최소 1개의 상품이 필요합니다.'); return; }
+  prizes = prizes.filter(x => x.id !== id);
+  updateAdminUI();
+  updateChips();
+}
+
+function addPrize() {
+  const rank = document.getElementById('new-rank').value.trim();
+  const name = document.getElementById('new-name').value.trim();
+  const qty  = parseInt(document.getElementById('new-qty').value) || 1;
+  if (!rank || !name) { alert('등수와 상품명을 입력하세요.'); return; }
+  prizes.push({ id: nextId++, rank, name, quantity: qty, total: qty, color: selectedNewColor });
+  document.getElementById('new-rank').value = '';
+  document.getElementById('new-name').value = '';
+  document.getElementById('new-qty').value = '1';
+  updateAdminUI();
+  updateChips();
+}
+
+function confirmReset() {
+  if (!confirm('모든 수량을 초기화하고 추첨 기록을 지우시겠습니까?')) return;
+  prizes.forEach(p => { p.quantity = p.total; });
+  history = [];
+  drawCount = 0;
+  updateAdminUI();
+  updateUI();
+  // reset slot display
+  document.getElementById('slot-display').innerHTML = '<div class="slot-idle">버튼을 눌러 추첨하세요</div>';
+}
+
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
+
+// ── CONFETTI ──
+let confettiFrameId = null;
+const confettiParticles = [];
+
+function launchConfetti(accentColor) {
+  const canvas = document.getElementById('confetti-canvas');
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  const ctx = canvas.getContext('2d');
+
+  confettiParticles.length = 0;
+  const colors = [accentColor || '#FFD700', '#fff', '#FF6B6B', '#4FC3F7', '#CE93D8'];
+  for (let i = 0; i < 160; i++) {
+    confettiParticles.push({
+      x: Math.random() * canvas.width,
+      y: -10 - Math.random() * 200,
+      w: 6 + Math.random() * 8,
+      h: 3 + Math.random() * 5,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      angle: Math.random() * Math.PI * 2,
+      spin: (Math.random() - .5) * .15,
+      vx: (Math.random() - .5) * 4,
+      vy: 2 + Math.random() * 4,
+      alpha: 1,
+    });
+  }
+
+  if (confettiFrameId) cancelAnimationFrame(confettiFrameId);
+
+  function animate() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    let alive = false;
+    for (const p of confettiParticles) {
+      if (p.alpha <= 0) continue;
+      alive = true;
+      p.x += p.vx; p.y += p.vy; p.angle += p.spin;
+      if (p.y > canvas.height * 0.7) p.alpha -= 0.012;
+      ctx.save();
+      ctx.globalAlpha = p.alpha;
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.angle);
+      ctx.fillStyle = p.color;
+      ctx.fillRect(-p.w/2, -p.h/2, p.w, p.h);
+      ctx.restore();
+    }
+    if (alive) confettiFrameId = requestAnimationFrame(animate);
+    else ctx.clearRect(0, 0, canvas.width, canvas.height);
+  }
+  animate();
+}
+
+function stopConfetti() {
+  if (confettiFrameId) { cancelAnimationFrame(confettiFrameId); confettiFrameId = null; }
+  const canvas = document.getElementById('confetti-canvas');
+  canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
+}
+
+// ── INIT ──
+window.addEventListener('resize', () => {
+  const canvas = document.getElementById('confetti-canvas');
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+});
+
+updateChips();
+</script>
+</body>
+</html>
