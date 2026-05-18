@@ -21,8 +21,86 @@ canvas#confetti-canvas {
   pointer-events: none; z-index: 9999;
 }
 
-/* ── SCREENS ── */
-.screen { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
+.screen {
+  min-height: 100vh; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; padding: 20px;
+}
+
+/* ── FULLSCREEN OVERLAYS ── */
+.fullscreen-overlay {
+  display: none; position: fixed; inset: 0; z-index: 800;
+  background: rgba(8,8,24,.97); backdrop-filter: blur(12px);
+  align-items: center; justify-content: center; flex-direction: column;
+  padding: 24px;
+}
+.fullscreen-overlay.show { display: flex; }
+
+/* ── SETUP OVERLAY ── */
+.setup-card {
+  width: min(560px, 96vw);
+  background: rgba(255,255,255,.05);
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 20px; padding: 40px;
+  animation: card-appear .4s cubic-bezier(.34,1.56,.64,1);
+}
+.setup-card h2 { font-size: 22px; font-weight: 700; margin-bottom: 6px; }
+.setup-card .subtitle {
+  font-size: 13px; color: rgba(255,255,255,.4); margin-bottom: 28px;
+}
+.setup-steps {
+  background: rgba(255,255,255,.04); border-radius: 12px;
+  padding: 16px 20px; margin-bottom: 24px;
+  border-left: 3px solid rgba(255,215,0,.4);
+}
+.setup-steps ol { padding-left: 18px; }
+.setup-steps li { font-size: 13px; color: rgba(255,255,255,.6); line-height: 2; }
+.setup-steps li code {
+  font-family: monospace; font-size: 12px;
+  background: rgba(255,255,255,.1); padding: 1px 6px; border-radius: 4px;
+  color: #ffd700;
+}
+.input-group { margin-bottom: 14px; }
+.input-group label { display: block; font-size: 12px; color: rgba(255,255,255,.4); margin-bottom: 6px; letter-spacing: 1px; }
+.input-group input {
+  width: 100%; background: rgba(255,255,255,.07);
+  border: 1px solid rgba(255,255,255,.15);
+  color: #fff; padding: 12px 16px; border-radius: 10px;
+  font-size: 13px; outline: none; font-family: monospace;
+  transition: border-color .2s;
+}
+.input-group input:focus { border-color: rgba(255,215,0,.5); }
+.input-group input::placeholder { color: rgba(255,255,255,.25); font-family: 'Segoe UI', sans-serif; }
+.btn-connect {
+  width: 100%; padding: 14px; font-size: 16px; font-weight: 700;
+  border: none; border-radius: 12px; cursor: pointer;
+  background: linear-gradient(135deg, #ffd700, #ff9500);
+  color: #1a0a00; margin-top: 8px; transition: filter .2s;
+}
+.btn-connect:hover { filter: brightness(1.1); }
+.setup-note {
+  font-size: 11px; color: rgba(255,255,255,.25); text-align: center; margin-top: 14px;
+}
+
+/* ── LOADING OVERLAY ── */
+.spinner {
+  width: 48px; height: 48px; border-radius: 50%;
+  border: 3px solid rgba(255,215,0,.15);
+  border-top-color: #ffd700;
+  animation: spin .8s linear infinite;
+  margin-bottom: 16px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.loading-text { color: rgba(255,255,255,.5); font-size: 14px; }
+
+/* ── TOAST ── */
+#toast {
+  position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%) translateY(80px);
+  background: rgba(255,80,80,.9); color: #fff;
+  padding: 12px 24px; border-radius: 32px; font-size: 14px; font-weight: 600;
+  z-index: 1000; transition: transform .3s cubic-bezier(.34,1.56,.64,1);
+  pointer-events: none; white-space: nowrap;
+}
+#toast.show { transform: translateX(-50%) translateY(0); }
 
 /* ── ADMIN TOGGLE ── */
 #admin-toggle {
@@ -39,27 +117,21 @@ canvas#confetti-canvas {
 #screen-draw { background: radial-gradient(ellipse at 50% 0%, #1a0a3a 0%, #080818 60%); }
 
 .event-title {
-  font-size: clamp(14px, 3vw, 18px);
-  letter-spacing: 6px; text-transform: uppercase;
+  font-size: clamp(14px, 3vw, 18px); letter-spacing: 6px;
   color: rgba(255,255,255,.4); margin-bottom: 8px;
 }
-
 .main-title {
-  font-size: clamp(40px, 10vw, 80px);
-  font-weight: 900; letter-spacing: 4px;
+  font-size: clamp(40px, 10vw, 80px); font-weight: 900; letter-spacing: 4px;
   background: linear-gradient(135deg, #ffd700 0%, #ff9500 50%, #ff6b6b 100%);
-  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-  background-clip: text;
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
   filter: drop-shadow(0 0 30px rgba(255,165,0,.4));
   margin-bottom: 48px;
 }
 
 .slot-machine {
   width: min(480px, 90vw); height: 120px;
-  border: 2px solid rgba(255,215,0,.3);
-  border-radius: 16px;
-  background: rgba(0,0,0,.4);
-  backdrop-filter: blur(10px);
+  border: 2px solid rgba(255,215,0,.3); border-radius: 16px;
+  background: rgba(0,0,0,.4); backdrop-filter: blur(10px);
   display: flex; align-items: center; justify-content: center;
   overflow: hidden; position: relative;
   box-shadow: 0 0 40px rgba(255,165,0,.1), inset 0 0 40px rgba(0,0,0,.5);
@@ -71,29 +143,21 @@ canvas#confetti-canvas {
 .slot-machine::before { top: 0; background: linear-gradient(#000, transparent); }
 .slot-machine::after  { bottom: 0; background: linear-gradient(transparent, #000); }
 
-.slot-display {
-  text-align: center; transition: transform .1s;
-  width: 100%;
-}
-.slot-display .slot-rank {
-  font-size: 13px; letter-spacing: 4px; color: rgba(255,215,0,.6);
-  text-transform: uppercase; margin-bottom: 4px;
-}
+.slot-display { text-align: center; width: 100%; }
+.slot-display .slot-rank { font-size: 13px; letter-spacing: 4px; margin-bottom: 4px; }
 .slot-display .slot-name {
   font-size: clamp(22px, 5vw, 32px); font-weight: 700;
   background: linear-gradient(135deg, #fff 0%, rgba(255,255,255,.7) 100%);
-  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-  background-clip: text;
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
 }
 .slot-display .slot-idle {
-  font-size: clamp(18px, 4vw, 26px);
+  font-size: clamp(16px, 3.5vw, 22px);
   color: rgba(255,255,255,.2); font-weight: 300; letter-spacing: 2px;
 }
 
 #draw-btn {
-  width: min(300px, 80vw); height: 72px;
-  font-size: 28px; font-weight: 800; letter-spacing: 6px;
-  border: none; border-radius: 36px; cursor: pointer;
+  width: min(300px, 80vw); height: 72px; font-size: 28px; font-weight: 800;
+  letter-spacing: 6px; border: none; border-radius: 36px; cursor: pointer;
   background: linear-gradient(135deg, #ffd700 0%, #ff9500 60%, #ff6b35 100%);
   color: #1a0a00;
   box-shadow: 0 8px 40px rgba(255,165,0,.5), 0 0 0 0 rgba(255,165,0,.4);
@@ -102,7 +166,7 @@ canvas#confetti-canvas {
 }
 @keyframes pulse-btn {
   0%, 100% { box-shadow: 0 8px 40px rgba(255,165,0,.5), 0 0 0 0 rgba(255,165,0,.4); }
-  50% { box-shadow: 0 8px 60px rgba(255,165,0,.7), 0 0 0 16px rgba(255,165,0,0); }
+  50%       { box-shadow: 0 8px 60px rgba(255,165,0,.7), 0 0 0 16px rgba(255,165,0,0); }
 }
 #draw-btn:hover:not(:disabled) { transform: translateY(-2px) scale(1.03); }
 #draw-btn:active:not(:disabled) { transform: scale(.97); }
@@ -114,19 +178,12 @@ canvas#confetti-canvas {
 }
 .prize-chip {
   padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 600;
-  border: 1px solid; display: flex; align-items: center; gap: 6px;
-  transition: opacity .3s;
+  border: 1px solid; display: flex; align-items: center; gap: 6px; transition: opacity .3s;
 }
 .prize-chip.depleted { opacity: .25; text-decoration: line-through; }
-.prize-chip .chip-count {
-  background: rgba(0,0,0,.3); border-radius: 10px;
-  padding: 1px 6px; font-size: 11px;
-}
+.prize-chip .chip-count { background: rgba(0,0,0,.3); border-radius: 10px; padding: 1px 6px; font-size: 11px; }
 
-.draw-history {
-  margin-top: 32px; max-width: 480px; width: 100%;
-  max-height: 160px; overflow-y: auto;
-}
+.draw-history { margin-top: 32px; max-width: 480px; width: 100%; max-height: 160px; overflow-y: auto; }
 .draw-history h3 {
   font-size: 11px; letter-spacing: 3px; color: rgba(255,255,255,.3);
   text-align: center; margin-bottom: 10px;
@@ -143,38 +200,29 @@ canvas#confetti-canvas {
 #result-overlay {
   display: none; position: fixed; inset: 0; z-index: 500;
   background: rgba(0,0,0,.85); backdrop-filter: blur(8px);
-  align-items: center; justify-content: center; flex-direction: column;
-  gap: 24px;
+  align-items: center; justify-content: center; flex-direction: column; gap: 24px;
 }
 #result-overlay.show { display: flex; }
 
 .result-card {
   text-align: center; padding: 48px 56px;
   background: linear-gradient(135deg, rgba(255,255,255,.08), rgba(255,255,255,.03));
-  border: 1px solid rgba(255,255,255,.15);
-  border-radius: 24px;
-  animation: card-appear .4s cubic-bezier(.34,1.56,.64,1);
-  max-width: 90vw;
+  border: 1px solid rgba(255,255,255,.15); border-radius: 24px;
+  animation: card-appear .4s cubic-bezier(.34,1.56,.64,1); max-width: 90vw;
 }
 @keyframes card-appear {
   from { transform: scale(.5) translateY(40px); opacity: 0; }
   to   { transform: scale(1) translateY(0); opacity: 1; }
 }
 .result-emoji { font-size: 64px; margin-bottom: 16px; }
-.result-rank {
-  font-size: 14px; letter-spacing: 6px;
-  color: rgba(255,215,0,.7); margin-bottom: 12px;
-}
-.result-name {
+.result-rank  { font-size: 14px; letter-spacing: 6px; color: rgba(255,215,0,.7); margin-bottom: 12px; }
+.result-name  {
   font-size: clamp(28px, 7vw, 48px); font-weight: 900;
   background: linear-gradient(135deg, #fff 0%, rgba(255,215,0,.9) 100%);
-  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-  background-clip: text;
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
   margin-bottom: 8px;
 }
-.result-subtext {
-  font-size: 14px; color: rgba(255,255,255,.4);
-}
+.result-subtext { font-size: 14px; color: rgba(255,255,255,.4); }
 
 .result-next-btn {
   padding: 14px 48px; font-size: 16px; font-weight: 700; letter-spacing: 2px;
@@ -183,101 +231,76 @@ canvas#confetti-canvas {
 }
 .result-next-btn:hover { background: rgba(255,255,255,.18); border-color: rgba(255,255,255,.5); }
 
-/* ── ADMIN PANEL ── */
-#screen-admin {
-  display: none; background: #0d0d1f;
-  justify-content: flex-start; padding-top: 80px;
-}
+/* ── ADMIN ── */
+#screen-admin { display: none; background: #0d0d1f; justify-content: flex-start; padding-top: 80px; }
 #screen-admin.show { display: flex; }
 
-.admin-container { width: min(700px, 96vw); }
-.admin-header {
-  display: flex; align-items: center; justify-content: space-between;
-  margin-bottom: 24px;
-}
+.admin-container { width: min(640px, 96vw); }
+.admin-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 28px; }
 .admin-header h2 { font-size: 22px; font-weight: 700; }
-.admin-header-btns { display: flex; gap: 10px; }
 
-.btn-secondary {
-  padding: 8px 20px; border-radius: 8px; font-size: 13px; font-weight: 600;
-  cursor: pointer; transition: all .2s; border: 1px solid rgba(255,255,255,.2);
-  background: rgba(255,255,255,.07); color: #fff;
-}
-.btn-secondary:hover { background: rgba(255,255,255,.15); }
-
-.btn-danger {
-  padding: 8px 20px; border-radius: 8px; font-size: 13px; font-weight: 600;
-  cursor: pointer; transition: all .2s; border: 1px solid rgba(255,80,80,.4);
-  background: rgba(255,80,80,.1); color: #ff6b6b;
-}
-.btn-danger:hover { background: rgba(255,80,80,.25); }
-
-.btn-primary {
-  padding: 8px 20px; border-radius: 8px; font-size: 13px; font-weight: 600;
-  cursor: pointer; transition: all .2s; border: none;
-  background: linear-gradient(135deg, #ffd700, #ff9500); color: #1a0a00;
-}
-.btn-primary:hover { filter: brightness(1.1); }
-
-.prize-table { width: 100%; border-collapse: collapse; margin-bottom: 24px; }
-.prize-table th {
-  text-align: left; padding: 10px 12px; font-size: 11px; letter-spacing: 2px;
-  color: rgba(255,255,255,.35); border-bottom: 1px solid rgba(255,255,255,.08);
-  text-transform: uppercase;
-}
-.prize-table td {
-  padding: 10px 12px; border-bottom: 1px solid rgba(255,255,255,.06);
-  vertical-align: middle;
-}
-.prize-table tr:hover td { background: rgba(255,255,255,.03); }
-
-.prize-table input {
-  background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.12);
-  color: #fff; padding: 6px 10px; border-radius: 6px; font-size: 13px; width: 100%;
-  outline: none;
-}
-.prize-table input:focus { border-color: rgba(255,165,0,.5); }
-.prize-table input[type=number] { width: 70px; text-align: center; }
-
-.color-dot {
-  width: 14px; height: 14px; border-radius: 50%; display: inline-block;
-}
-
-.icon-btn {
-  background: none; border: none; cursor: pointer; padding: 4px 8px;
-  font-size: 16px; opacity: .5; transition: opacity .2s;
-}
-.icon-btn:hover { opacity: 1; }
-
-.add-prize-row {
-  display: flex; gap: 10px; align-items: center; margin-bottom: 16px;
-}
-.add-prize-row input {
-  flex: 1; background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.12);
-  color: #fff; padding: 10px 14px; border-radius: 8px; font-size: 14px; outline: none;
-}
-.add-prize-row input:focus { border-color: rgba(255,165,0,.5); }
-.add-prize-row input[type=number] { width: 80px; flex: 0; text-align: center; }
-
-.color-options { display: flex; gap: 6px; align-items: center; }
-.color-opt {
-  width: 22px; height: 22px; border-radius: 50%; cursor: pointer;
-  border: 2px solid transparent; transition: border-color .15s;
-}
-.color-opt.selected { border-color: #fff; }
-
-.admin-stats {
+.admin-card {
   background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.08);
-  border-radius: 12px; padding: 16px 20px; margin-bottom: 24px;
-  display: flex; gap: 24px; flex-wrap: wrap;
+  border-radius: 14px; padding: 20px 24px; margin-bottom: 16px;
 }
+.admin-card h3 { font-size: 12px; letter-spacing: 2px; color: rgba(255,255,255,.35); margin-bottom: 14px; text-transform: uppercase; }
+
+.admin-stats { display: flex; gap: 24px; flex-wrap: wrap; }
 .stat-item { text-align: center; }
 .stat-num { font-size: 28px; font-weight: 700; color: #ffd700; }
 .stat-label { font-size: 11px; color: rgba(255,255,255,.35); margin-top: 2px; letter-spacing: 1px; }
 
-.warning-text { font-size: 12px; color: rgba(255,165,0,.6); margin-top: 8px; }
+.prize-list { display: flex; flex-direction: column; gap: 8px; }
+.prize-row {
+  display: flex; align-items: center; gap: 12px;
+  background: rgba(255,255,255,.03); border-radius: 8px; padding: 10px 14px;
+  font-size: 13px;
+}
+.prize-row .p-color { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.prize-row .p-rank { font-weight: 700; width: 48px; flex-shrink: 0; }
+.prize-row .p-name { flex: 1; color: rgba(255,255,255,.8); }
+.prize-row .p-qty {
+  font-size: 12px; padding: 3px 10px; border-radius: 10px;
+  background: rgba(255,255,255,.08); color: rgba(255,255,255,.5);
+}
+.prize-row .p-qty.depleted { text-decoration: line-through; opacity: .4; }
 
-/* scrollbar */
+.btn-row { display: flex; gap: 10px; flex-wrap: wrap; }
+
+.btn-secondary {
+  padding: 10px 20px; border-radius: 8px; font-size: 13px; font-weight: 600;
+  cursor: pointer; border: 1px solid rgba(255,255,255,.2);
+  background: rgba(255,255,255,.07); color: #fff; transition: all .2s;
+}
+.btn-secondary:hover { background: rgba(255,255,255,.15); }
+
+.btn-sheet {
+  padding: 10px 20px; border-radius: 8px; font-size: 13px; font-weight: 600;
+  cursor: pointer; border: 1px solid rgba(52,168,83,.4);
+  background: rgba(52,168,83,.1); color: #4caf50; transition: all .2s; text-decoration: none;
+  display: inline-flex; align-items: center; gap: 6px;
+}
+.btn-sheet:hover { background: rgba(52,168,83,.2); }
+
+.btn-primary {
+  padding: 10px 20px; border-radius: 8px; font-size: 13px; font-weight: 600;
+  cursor: pointer; border: none; background: linear-gradient(135deg, #ffd700, #ff9500);
+  color: #1a0a00; transition: filter .2s;
+}
+.btn-primary:hover { filter: brightness(1.1); }
+
+.btn-danger {
+  padding: 10px 20px; border-radius: 8px; font-size: 13px; font-weight: 600;
+  cursor: pointer; border: 1px solid rgba(255,80,80,.4);
+  background: rgba(255,80,80,.1); color: #ff6b6b; transition: all .2s;
+}
+.btn-danger:hover { background: rgba(255,80,80,.25); }
+
+.api-url-display {
+  font-family: monospace; font-size: 11px; color: rgba(255,255,255,.25);
+  word-break: break-all; margin-top: 8px;
+}
+
 ::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: rgba(255,255,255,.15); border-radius: 2px; }
@@ -286,7 +309,45 @@ canvas#confetti-canvas {
 <body>
 
 <canvas id="confetti-canvas"></canvas>
+<div id="toast"></div>
 
+<!-- ── SETUP OVERLAY ── -->
+<div id="setup-overlay" class="fullscreen-overlay">
+  <div class="setup-card">
+    <h2>🔗 구글 시트 연동</h2>
+    <div class="subtitle">Apps Script 배포 URL을 입력하면 구글 시트와 연동됩니다</div>
+
+    <div class="setup-steps">
+      <ol>
+        <li>구글 시트를 만들고 아래 형식으로 상품을 입력합니다<br>
+          <code>id · 등수 · 상품명 · 남은수량 · 총수량 · 색상</code></li>
+        <li>시트 메뉴 → <code>확장 프로그램</code> → <code>Apps Script</code> 클릭</li>
+        <li>제공된 코드를 붙여넣고 <code>웹 앱으로 배포</code></li>
+        <li>배포 URL을 아래에 입력</li>
+      </ol>
+    </div>
+
+    <div class="input-group">
+      <label>APPS SCRIPT 배포 URL *</label>
+      <input type="url" id="api-url-input" placeholder="https://script.google.com/macros/s/.../exec">
+    </div>
+    <div class="input-group">
+      <label>구글 시트 URL (선택 — 관리자 패널에서 바로 열기용)</label>
+      <input type="url" id="sheet-url-input" placeholder="https://docs.google.com/spreadsheets/d/...">
+    </div>
+
+    <button class="btn-connect" onclick="saveSetup()">연결하기 →</button>
+    <div class="setup-note">설정은 이 브라우저에 저장됩니다 · 나중에 관리자 패널에서 변경 가능</div>
+  </div>
+</div>
+
+<!-- ── LOADING OVERLAY ── -->
+<div id="loading-overlay" class="fullscreen-overlay">
+  <div class="spinner"></div>
+  <div class="loading-text">상품 정보 불러오는 중...</div>
+</div>
+
+<!-- ── ADMIN TOGGLE ── -->
 <button id="admin-toggle" title="관리자 설정" onclick="toggleAdmin()">⚙️</button>
 
 <!-- ── DRAW SCREEN ── -->
@@ -312,11 +373,11 @@ canvas#confetti-canvas {
 
 <!-- ── RESULT OVERLAY ── -->
 <div id="result-overlay">
-  <div class="result-card" id="result-card">
+  <div class="result-card">
     <div class="result-emoji" id="result-emoji">🎉</div>
-    <div class="result-rank" id="result-rank">1등</div>
-    <div class="result-name" id="result-name">에어팟 프로</div>
-    <div class="result-subtext" id="result-subtext">축하합니다!</div>
+    <div class="result-rank"  id="result-rank">1등</div>
+    <div class="result-name"  id="result-name">상품명</div>
+    <div class="result-subtext">축하합니다! 🎊</div>
   </div>
   <button class="result-next-btn" onclick="closeResult()">다음 추첨 →</button>
 </div>
@@ -325,140 +386,211 @@ canvas#confetti-canvas {
 <div id="screen-admin" class="screen">
   <div class="admin-container">
     <div class="admin-header">
-      <h2>🎛️ 상품 설정</h2>
-      <div class="admin-header-btns">
-        <button class="btn-danger" onclick="confirmReset()">전체 초기화</button>
-        <button class="btn-primary" onclick="toggleAdmin()">← 추첨으로 돌아가기</button>
+      <h2>🎛️ 관리자</h2>
+      <button class="btn-primary" onclick="toggleAdmin()">← 추첨으로</button>
+    </div>
+
+    <div class="admin-card">
+      <h3>현황</h3>
+      <div class="admin-stats" id="admin-stats"></div>
+    </div>
+
+    <div class="admin-card">
+      <h3>상품 목록</h3>
+      <div class="prize-list" id="admin-prize-list"></div>
+    </div>
+
+    <div class="admin-card">
+      <h3>관리</h3>
+      <div class="btn-row">
+        <a id="sheet-link" class="btn-sheet" href="#" target="_blank">📊 구글 시트 열기</a>
+        <button class="btn-secondary" onclick="refreshPrizes()">🔄 새로고침</button>
+        <button class="btn-danger"    onclick="confirmReset()">초기화</button>
       </div>
+      <div class="api-url-display" id="api-url-display"></div>
     </div>
 
-    <div class="admin-stats" id="admin-stats"></div>
-
-    <table class="prize-table" id="prize-table">
-      <thead>
-        <tr>
-          <th>색상</th>
-          <th>등수</th>
-          <th>상품명</th>
-          <th>남은 수량</th>
-          <th>총 수량</th>
-          <th></th>
-        </tr>
-      </thead>
-      <tbody id="prize-tbody"></tbody>
-    </table>
-
-    <div style="margin-bottom:12px;font-size:12px;color:rgba(255,255,255,.4);letter-spacing:1px">+ 상품 추가</div>
-    <div class="add-prize-row" id="add-row">
-      <div class="color-options" id="new-color-opts"></div>
-      <input type="text" id="new-rank" placeholder="등수 (예: 1등)" maxlength="10" style="width:90px;flex:0">
-      <input type="text" id="new-name" placeholder="상품명">
-      <input type="number" id="new-qty" placeholder="수량" min="1" max="9999" value="1">
-      <button class="btn-primary" onclick="addPrize()">추가</button>
+    <div class="admin-card">
+      <h3>API 설정 변경</h3>
+      <div class="input-group" style="margin-bottom:10px">
+        <input type="url" id="change-api-input" placeholder="새 Apps Script URL">
+      </div>
+      <div class="input-group" style="margin-bottom:10px">
+        <input type="url" id="change-sheet-input" placeholder="새 구글 시트 URL (선택)">
+      </div>
+      <button class="btn-secondary" onclick="changeApi()">변경 적용</button>
     </div>
-    <div class="warning-text">⚠️ 수량을 수정하면 남은 수량에 바로 반영됩니다.</div>
   </div>
 </div>
 
 <script>
+// ── CONSTANTS ──
+const RANK_EMOJI = { '1등':'🥇', '2등':'🥈', '3등':'🥉' };
+const LS_API   = 'luckyDrawApiUrl';
+const LS_SHEET = 'luckyDrawSheetUrl';
+
 // ── STATE ──
-const COLORS = ['#FFD700','#C0C0C0','#CD7F32','#4FC3F7','#CE93D8','#A5D6A7','#FF8A65','#F48FB1'];
-const RANK_EMOJI = { '1등':'🥇','2등':'🥈','3등':'🥉' };
-
-let prizes = [
-  { id: 1, rank: '1등',  name: '에어팟 프로',       quantity: 1,  total: 1,  color: '#FFD700' },
-  { id: 2, rank: '2등',  name: '스타벅스 기프트카드', quantity: 3,  total: 3,  color: '#C0C0C0' },
-  { id: 3, rank: '3등',  name: '편의점 상품권',       quantity: 5,  total: 5,  color: '#CD7F32' },
-  { id: 4, rank: '참가상', name: '기념품',            quantity: 20, total: 20, color: '#4FC3F7' },
-];
-let nextId = 5;
-let history = [];
+let prizes    = [];
+let history   = [];
 let isDrawing = false;
-let selectedNewColor = COLORS[0];
 let drawCount = 0;
+let apiUrl    = localStorage.getItem(LS_API)   || '';
+let sheetUrl  = localStorage.getItem(LS_SHEET) || '';
+let stopCycling = null; // function to stop slot cycling
 
-// ── DRAW LOGIC ──
-function getAvailable() { return prizes.filter(p => p.quantity > 0); }
-
-function pickPrize() {
-  const avail = getAvailable();
-  if (!avail.length) return null;
-  const total = avail.reduce((s, p) => s + p.quantity, 0);
-  let r = Math.random() * total;
-  for (const p of avail) { r -= p.quantity; if (r <= 0) return p; }
-  return avail[avail.length - 1];
+// ── INIT ──
+async function init() {
+  if (!apiUrl) { show('setup-overlay'); return; }
+  await loadPrizes();
 }
 
+async function loadPrizes() {
+  show('loading-overlay');
+  try {
+    const data = await apiFetch({ action: 'getPrizes' });
+    prizes = data.prizes || [];
+    updateUI();
+    hide('loading-overlay');
+  } catch(e) {
+    hide('loading-overlay');
+    showToast('상품 정보를 불러오지 못했습니다 — API URL을 확인하세요', 4000);
+  }
+}
+
+// ── SETUP ──
+function saveSetup() {
+  const url   = document.getElementById('api-url-input').value.trim();
+  const sheet = document.getElementById('sheet-url-input').value.trim();
+  if (!url) { showToast('API URL을 입력해주세요'); return; }
+  apiUrl   = url;
+  sheetUrl = sheet;
+  localStorage.setItem(LS_API, url);
+  if (sheet) localStorage.setItem(LS_SHEET, sheet);
+  hide('setup-overlay');
+  loadPrizes();
+}
+
+// ── API ──
+async function apiFetch(params) {
+  const url = new URL(apiUrl);
+  Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, String(v)));
+  const res = await fetch(url.toString());
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}
+
+// ── DRAW ──
 async function startDraw() {
   if (isDrawing) return;
-  if (!getAvailable().length) { alert('🎰 모든 상품이 소진되었습니다!'); return; }
+  if (!prizes.some(p => p.quantity > 0)) {
+    showToast('🎰 모든 상품이 소진되었습니다!'); return;
+  }
 
   isDrawing = true;
   document.getElementById('draw-btn').disabled = true;
 
-  const winner = pickPrize();
-  winner.quantity--;
+  // Start slot animation + call API in parallel
+  const apiPromise = apiFetch({ action: 'draw' });
+  const minWaitPromise = sleep(2200);
+  const landOn = startSlotAnimation();
 
-  await runSlotAnimation(winner);
+  let result;
+  try {
+    result = await apiPromise;
+  } catch(e) {
+    stopCycling && stopCycling();
+    showToast('네트워크 오류가 발생했습니다');
+    isDrawing = false;
+    document.getElementById('draw-btn').disabled = false;
+    return;
+  }
 
-  showResult(winner);
+  if (result.error === 'all_depleted') {
+    stopCycling && stopCycling();
+    showToast('🎰 모든 상품이 소진되었습니다!');
+    await loadPrizes();
+    isDrawing = false;
+    document.getElementById('draw-btn').disabled = false;
+    return;
+  }
+
+  if (result.error) {
+    stopCycling && stopCycling();
+    showToast('오류: ' + result.error);
+    isDrawing = false;
+    document.getElementById('draw-btn').disabled = false;
+    return;
+  }
+
+  // Wait minimum animation time, then land on winner
+  await minWaitPromise;
+  await landOn(result.winner);
+
+  // Update local state
+  const p = prizes.find(x => x.id == result.winner.id);
+  if (p) p.quantity = result.remaining;
+
   drawCount++;
-  history.unshift({ ...winner, drawNum: drawCount });
+  history.unshift({ ...result.winner, drawNum: drawCount });
+  showResult(result.winner);
   updateUI();
 
   isDrawing = false;
   document.getElementById('draw-btn').disabled = false;
 }
 
-// slot animation: cycle through available prizes, slow and land on winner
-function runSlotAnimation(winner) {
-  return new Promise(resolve => {
-    const display = document.getElementById('slot-display');
-    const allPrizes = prizes.filter(p => p.id !== winner.id);
-    allPrizes.push(winner); // ensure winner is in pool
+// ── SLOT ANIMATION ──
+function startSlotAnimation() {
+  let active = true;
+  let timeoutId = null;
+  let speed = 80;
 
-    let elapsed = 0;
-    const duration = 2800;
-    let interval = 60;
-    let idx = 0;
+  function cycle() {
+    if (!active) return;
+    const available = prizes.filter(p => p.quantity > 0);
+    const pool = available.length ? available : prizes;
+    const p = pool[Math.floor(Math.random() * pool.length)];
+    setSlotContent(`
+      <div class="slot-rank" style="color:${p.color};opacity:.7">${p.rank}</div>
+      <div class="slot-name">${p.name}</div>`);
+    speed = Math.min(speed + 1.5, 140);
+    timeoutId = setTimeout(cycle, speed);
+  }
+  cycle();
 
-    function step() {
-      if (elapsed >= duration) {
-        // land on winner
-        display.innerHTML = `
-          <div class="slot-rank" style="color:${winner.color}">${winner.rank}</div>
-          <div class="slot-name">${winner.name}</div>`;
-        setTimeout(resolve, 400);
-        return;
-      }
+  stopCycling = () => { active = false; clearTimeout(timeoutId); };
 
-      const frac = elapsed / duration;
-      // ease-in: start fast, end slow
-      const speedMul = frac < 0.5 ? 1 : 1 + (frac - 0.5) * 8;
-      interval = Math.min(60 + speedMul * 120, 280);
+  // Returns a function to decelerate and land on winner
+  return async function landOn(winner) {
+    active = false;
+    clearTimeout(timeoutId);
 
-      const p = allPrizes[idx % allPrizes.length];
-      display.innerHTML = `
-        <div class="slot-rank" style="color:${p.color};opacity:.7">${p.rank}</div>
-        <div class="slot-name">${p.name}</div>`;
-      idx++;
-      elapsed += interval;
-      setTimeout(step, interval);
+    const steps = 10;
+    for (let i = 0; i < steps; i++) {
+      const isLast = i === steps - 1;
+      const p = isLast ? winner : prizes[Math.floor(Math.random() * prizes.length)];
+      setSlotContent(`
+        <div class="slot-rank" style="color:${p.color}">${p.rank}</div>
+        <div class="slot-name">${p.name}</div>`);
+      await sleep(80 + i * 55);
     }
-    step();
-  });
+    await sleep(400);
+  };
+}
+
+function setSlotContent(html) {
+  document.getElementById('slot-display').innerHTML = html;
 }
 
 // ── RESULT ──
-function showResult(p) {
-  const emoji = RANK_EMOJI[p.rank] || '🎉';
+function showResult(w) {
+  const emoji = RANK_EMOJI[w.rank] || '🎉';
   document.getElementById('result-emoji').textContent = emoji;
-  document.getElementById('result-rank').textContent = p.rank;
-  document.getElementById('result-rank').style.color = p.color;
-  document.getElementById('result-name').textContent = p.name;
-  document.getElementById('result-subtext').textContent = '축하합니다! 🎊';
+  document.getElementById('result-rank').textContent  = w.rank;
+  document.getElementById('result-rank').style.color  = w.color;
+  document.getElementById('result-name').textContent  = w.name;
   document.getElementById('result-overlay').classList.add('show');
-  launchConfetti(p.color);
+  launchConfetti(w.color);
 }
 
 function closeResult() {
@@ -474,13 +606,13 @@ function updateUI() {
 }
 
 function updateChips() {
-  const container = document.getElementById('prizes-remaining');
-  container.innerHTML = prizes.map(p => `
-    <div class="prize-chip ${p.quantity === 0 ? 'depleted' : ''}"
-         style="border-color:${p.color}40;color:${p.color}">
-      ${p.rank}
-      <span class="chip-count" style="background:${p.color}20">${p.quantity}/${p.total}</span>
-    </div>`).join('');
+  document.getElementById('prizes-remaining').innerHTML =
+    prizes.map(p => `
+      <div class="prize-chip ${p.quantity == 0 ? 'depleted' : ''}"
+           style="border-color:${p.color}40;color:${p.color}">
+        ${p.rank}
+        <span class="chip-count" style="background:${p.color}20">${p.quantity}/${p.total}</span>
+      </div>`).join('');
 }
 
 function updateHistory() {
@@ -500,108 +632,85 @@ function updateHistory() {
 function toggleAdmin() {
   const admin = document.getElementById('screen-admin');
   const draw  = document.getElementById('screen-draw');
-  const isAdmin = admin.classList.contains('show');
-  admin.classList.toggle('show', !isAdmin);
-  draw.style.display = isAdmin ? 'flex' : 'none';
-  if (!isAdmin) updateAdminUI();
+  const show  = !admin.classList.contains('show');
+  admin.classList.toggle('show', show);
+  draw.style.display = show ? 'none' : 'flex';
+  if (show) updateAdminUI();
 }
 
 function updateAdminUI() {
-  updateAdminStats();
-  renderPrizeTable();
-  renderColorOptions();
-}
-
-function updateAdminStats() {
-  const total = prizes.reduce((s, p) => s + p.total, 0);
+  const total     = prizes.reduce((s, p) => s + p.total, 0);
   const remaining = prizes.reduce((s, p) => s + p.quantity, 0);
   document.getElementById('admin-stats').innerHTML = `
     <div class="stat-item"><div class="stat-num">${prizes.length}</div><div class="stat-label">등수 종류</div></div>
-    <div class="stat-item"><div class="stat-num">${total}</div><div class="stat-label">총 상품 수</div></div>
+    <div class="stat-item"><div class="stat-num">${total}</div><div class="stat-label">총 상품</div></div>
     <div class="stat-item"><div class="stat-num">${remaining}</div><div class="stat-label">남은 상품</div></div>
     <div class="stat-item"><div class="stat-num">${history.length}</div><div class="stat-label">추첨 횟수</div></div>`;
+
+  document.getElementById('admin-prize-list').innerHTML =
+    prizes.map(p => `
+      <div class="prize-row">
+        <span class="p-color" style="background:${p.color}"></span>
+        <span class="p-rank" style="color:${p.color}">${p.rank}</span>
+        <span class="p-name">${p.name}</span>
+        <span class="p-qty ${p.quantity == 0 ? 'depleted' : ''}">${p.quantity} / ${p.total}</span>
+      </div>`).join('');
+
+  const sheetLink = document.getElementById('sheet-link');
+  if (sheetUrl) { sheetLink.href = sheetUrl; sheetLink.style.opacity = '1'; }
+  else { sheetLink.href = '#'; sheetLink.style.opacity = '.4'; }
+
+  document.getElementById('api-url-display').textContent = apiUrl;
+  document.getElementById('change-api-input').value   = apiUrl;
+  document.getElementById('change-sheet-input').value = sheetUrl;
 }
 
-function renderPrizeTable() {
-  const tbody = document.getElementById('prize-tbody');
-  tbody.innerHTML = prizes.map((p, i) => `
-    <tr data-id="${p.id}">
-      <td><span class="color-dot" style="background:${p.color}"></span></td>
-      <td><input type="text" value="${esc(p.rank)}" onchange="updatePrize(${p.id},'rank',this.value)" style="width:70px"></td>
-      <td><input type="text" value="${esc(p.name)}" onchange="updatePrize(${p.id},'name',this.value)"></td>
-      <td><input type="number" value="${p.quantity}" min="0" max="9999" onchange="updatePrize(${p.id},'quantity',+this.value)" style="width:70px"></td>
-      <td><input type="number" value="${p.total}" min="1" max="9999" onchange="updatePrize(${p.id},'total',+this.value)" style="width:70px"></td>
-      <td>
-        <button class="icon-btn" onclick="movePrize(${p.id},-1)" title="위로" ${i===0?'disabled':''}>↑</button>
-        <button class="icon-btn" onclick="movePrize(${p.id},1)" title="아래로" ${i===prizes.length-1?'disabled':''}>↓</button>
-        <button class="icon-btn" onclick="deletePrize(${p.id})" title="삭제">🗑️</button>
-      </td>
-    </tr>`).join('');
-}
-
-function renderColorOptions() {
-  const cont = document.getElementById('new-color-opts');
-  cont.innerHTML = COLORS.map(c => `
-    <div class="color-opt ${c === selectedNewColor ? 'selected' : ''}"
-         style="background:${c}" onclick="selectColor('${c}')"></div>`).join('');
-}
-
-function selectColor(c) {
-  selectedNewColor = c;
-  renderColorOptions();
-}
-
-function updatePrize(id, field, val) {
-  const p = prizes.find(x => x.id === id);
-  if (!p) return;
-  if (field === 'quantity') p.quantity = Math.max(0, Math.min(9999, val));
-  else if (field === 'total') p.total = Math.max(1, Math.min(9999, val));
-  else p[field] = val;
-  updateAdminStats();
-  updateChips();
-}
-
-function movePrize(id, dir) {
-  const i = prizes.findIndex(x => x.id === id);
-  const j = i + dir;
-  if (j < 0 || j >= prizes.length) return;
-  [prizes[i], prizes[j]] = [prizes[j], prizes[i]];
-  renderPrizeTable();
-  updateChips();
-}
-
-function deletePrize(id) {
-  if (prizes.length <= 1) { alert('최소 1개의 상품이 필요합니다.'); return; }
-  prizes = prizes.filter(x => x.id !== id);
+async function refreshPrizes() {
+  await loadPrizes();
   updateAdminUI();
-  updateChips();
+  showToast('✅ 새로고침 완료');
 }
 
-function addPrize() {
-  const rank = document.getElementById('new-rank').value.trim();
-  const name = document.getElementById('new-name').value.trim();
-  const qty  = parseInt(document.getElementById('new-qty').value) || 1;
-  if (!rank || !name) { alert('등수와 상품명을 입력하세요.'); return; }
-  prizes.push({ id: nextId++, rank, name, quantity: qty, total: qty, color: selectedNewColor });
-  document.getElementById('new-rank').value = '';
-  document.getElementById('new-name').value = '';
-  document.getElementById('new-qty').value = '1';
-  updateAdminUI();
-  updateChips();
-}
-
-function confirmReset() {
+async function confirmReset() {
   if (!confirm('모든 수량을 초기화하고 추첨 기록을 지우시겠습니까?')) return;
-  prizes.forEach(p => { p.quantity = p.total; });
-  history = [];
-  drawCount = 0;
-  updateAdminUI();
-  updateUI();
-  // reset slot display
-  document.getElementById('slot-display').innerHTML = '<div class="slot-idle">버튼을 눌러 추첨하세요</div>';
+  try {
+    await apiFetch({ action: 'reset' });
+    history = [];
+    drawCount = 0;
+    setSlotContent('<div class="slot-idle">버튼을 눌러 추첨하세요</div>');
+    await loadPrizes();
+    updateAdminUI();
+    showToast('✅ 초기화 완료');
+  } catch(e) {
+    showToast('초기화 중 오류가 발생했습니다');
+  }
 }
 
-function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
+function changeApi() {
+  const url   = document.getElementById('change-api-input').value.trim();
+  const sheet = document.getElementById('change-sheet-input').value.trim();
+  if (!url) { showToast('URL을 입력해주세요'); return; }
+  apiUrl   = url;
+  sheetUrl = sheet;
+  localStorage.setItem(LS_API, url);
+  localStorage.setItem(LS_SHEET, sheet);
+  loadPrizes().then(updateAdminUI);
+  showToast('✅ API URL 변경됨');
+}
+
+// ── HELPERS ──
+function show(id) { document.getElementById(id).classList.add('show'); }
+function hide(id) { document.getElementById(id).classList.remove('show'); }
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+let toastTimeout;
+function showToast(msg, duration = 2500) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimeout);
+  toastTimeout = setTimeout(() => el.classList.remove('show'), duration);
+}
 
 // ── CONFETTI ──
 let confettiFrameId = null;
@@ -612,26 +721,18 @@ function launchConfetti(accentColor) {
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
   const ctx = canvas.getContext('2d');
-
   confettiParticles.length = 0;
   const colors = [accentColor || '#FFD700', '#fff', '#FF6B6B', '#4FC3F7', '#CE93D8'];
   for (let i = 0; i < 160; i++) {
     confettiParticles.push({
-      x: Math.random() * canvas.width,
-      y: -10 - Math.random() * 200,
-      w: 6 + Math.random() * 8,
-      h: 3 + Math.random() * 5,
+      x: Math.random() * canvas.width, y: -10 - Math.random() * 200,
+      w: 6 + Math.random() * 8, h: 3 + Math.random() * 5,
       color: colors[Math.floor(Math.random() * colors.length)],
-      angle: Math.random() * Math.PI * 2,
-      spin: (Math.random() - .5) * .15,
-      vx: (Math.random() - .5) * 4,
-      vy: 2 + Math.random() * 4,
-      alpha: 1,
+      angle: Math.random() * Math.PI * 2, spin: (Math.random() - .5) * .15,
+      vx: (Math.random() - .5) * 4, vy: 2 + Math.random() * 4, alpha: 1,
     });
   }
-
   if (confettiFrameId) cancelAnimationFrame(confettiFrameId);
-
   function animate() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     let alive = false;
@@ -642,8 +743,7 @@ function launchConfetti(accentColor) {
       if (p.y > canvas.height * 0.7) p.alpha -= 0.012;
       ctx.save();
       ctx.globalAlpha = p.alpha;
-      ctx.translate(p.x, p.y);
-      ctx.rotate(p.angle);
+      ctx.translate(p.x, p.y); ctx.rotate(p.angle);
       ctx.fillStyle = p.color;
       ctx.fillRect(-p.w/2, -p.h/2, p.w, p.h);
       ctx.restore();
@@ -656,18 +756,21 @@ function launchConfetti(accentColor) {
 
 function stopConfetti() {
   if (confettiFrameId) { cancelAnimationFrame(confettiFrameId); confettiFrameId = null; }
-  const canvas = document.getElementById('confetti-canvas');
-  canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
+  const c = document.getElementById('confetti-canvas');
+  c.getContext('2d').clearRect(0, 0, c.width, c.height);
 }
 
-// ── INIT ──
-window.addEventListener('resize', () => {
-  const canvas = document.getElementById('confetti-canvas');
-  canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight;
+// Auto-refresh when tab regains focus (sync state from sheet)
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden && apiUrl && !isDrawing) loadPrizes();
 });
 
-updateChips();
+window.addEventListener('resize', () => {
+  const c = document.getElementById('confetti-canvas');
+  c.width = window.innerWidth; c.height = window.innerHeight;
+});
+
+init();
 </script>
 </body>
 </html>
