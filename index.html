@@ -512,6 +512,14 @@ function apiFetch(params) {
 }
 
 // ── DRAW ──
+function pickWinner() {
+  const pool = [];
+  for (const p of prizes) {
+    for (let i = 0; i < p.quantity; i++) pool.push(p);
+  }
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
 async function startDraw() {
   if (isDrawing) return;
   if (!prizes.some(p => p.quantity > 0)) {
@@ -521,51 +529,23 @@ async function startDraw() {
   isDrawing = true;
   document.getElementById('draw-btn').disabled = true;
 
-  // Start slot animation + call API in parallel
-  const apiPromise = apiFetch({ action: 'draw' });
-  const minWaitPromise = sleep(2200);
+  // 당첨자 즉시 결정 (로컬)
+  const winner = pickWinner();
+  winner.quantity--;
+
+  // 애니메이션 실행 (API 응답 기다리지 않음)
   const landOn = startSlotAnimation();
-
-  let result;
-  try {
-    result = await apiPromise;
-  } catch(e) {
-    stopCycling && stopCycling();
-    showToast('네트워크 오류가 발생했습니다');
-    isDrawing = false;
-    document.getElementById('draw-btn').disabled = false;
-    return;
-  }
-
-  if (result.error === 'all_depleted') {
-    stopCycling && stopCycling();
-    showToast('🎰 모든 상품이 소진되었습니다!');
-    await loadPrizes();
-    isDrawing = false;
-    document.getElementById('draw-btn').disabled = false;
-    return;
-  }
-
-  if (result.error) {
-    stopCycling && stopCycling();
-    showToast('오류: ' + result.error);
-    isDrawing = false;
-    document.getElementById('draw-btn').disabled = false;
-    return;
-  }
-
-  // Wait minimum animation time, then land on winner
-  await minWaitPromise;
-  await landOn(result.winner);
-
-  // Update local state
-  const p = prizes.find(x => x.id == result.winner.id);
-  if (p) p.quantity = result.remaining;
+  await sleep(1400);
+  await landOn(winner);
 
   drawCount++;
-  history.unshift({ ...result.winner, drawNum: drawCount });
-  showResult(result.winner);
+  history.unshift({ ...winner, drawNum: drawCount });
+  showResult(winner);
   updateUI();
+
+  // 시트 업데이트는 백그라운드 (결과 표시에 영향 없음)
+  apiFetch({ action: 'draw', id: winner.id })
+    .catch(() => showToast('⚠️ 시트 동기화 실패 — 네트워크를 확인하세요', 3000));
 
   isDrawing = false;
   document.getElementById('draw-btn').disabled = false;
@@ -597,14 +577,14 @@ function startSlotAnimation() {
     active = false;
     clearTimeout(timeoutId);
 
-    const steps = 10;
+    const steps = 7;
     for (let i = 0; i < steps; i++) {
       const isLast = i === steps - 1;
       const p = isLast ? winner : prizes[Math.floor(Math.random() * prizes.length)];
       setSlotContent(`
         <div class="slot-rank" style="color:${p.color}">${p.rank}</div>
         <div class="slot-name">${p.name}</div>`);
-      await sleep(80 + i * 55);
+      await sleep(60 + i * 60);
     }
     await sleep(400);
   };
