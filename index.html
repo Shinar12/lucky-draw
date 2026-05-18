@@ -453,7 +453,8 @@ async function loadPrizes() {
     hide('loading-overlay');
   } catch(e) {
     hide('loading-overlay');
-    showToast('상품 정보를 불러오지 못했습니다 — API URL을 확인하세요', 4000);
+    showToast('오류: ' + e.message, 5000);
+    show('setup-overlay');
   }
 }
 
@@ -470,13 +471,44 @@ function saveSetup() {
   loadPrizes();
 }
 
-// ── API ──
-async function apiFetch(params) {
-  const url = new URL(apiUrl);
-  Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, String(v)));
-  const res = await fetch(url.toString());
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  return res.json();
+// ── API (JSONP — CORS 우회) ──
+function apiFetch(params) {
+  return new Promise((resolve, reject) => {
+    const cbName = '_ld_' + Date.now() + '_' + Math.random().toString(36).slice(2);
+    const url = new URL(apiUrl);
+    Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, String(v)));
+    url.searchParams.set('callback', cbName);
+
+    let settled = false;
+    const timer = setTimeout(() => {
+      if (settled) return;
+      settled = true; cleanup();
+      reject(new Error('요청 시간 초과 (10초) — 배포 URL을 확인하세요'));
+    }, 10000);
+
+    function cleanup() {
+      clearTimeout(timer);
+      delete window[cbName];
+      const el = document.getElementById(cbName);
+      if (el) el.remove();
+    }
+
+    window[cbName] = (data) => {
+      if (settled) return;
+      settled = true; cleanup();
+      resolve(data);
+    };
+
+    const script = document.createElement('script');
+    script.id  = cbName;
+    script.src = url.toString();
+    script.onerror = () => {
+      if (settled) return;
+      settled = true; cleanup();
+      reject(new Error('URL 오류 — Apps Script 배포 URL이 올바른지 확인하세요'));
+    };
+    document.head.appendChild(script);
+  });
 }
 
 // ── DRAW ──
