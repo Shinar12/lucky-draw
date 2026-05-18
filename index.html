@@ -405,20 +405,10 @@ canvas#confetti-canvas {
       <div class="btn-row">
         <a id="sheet-link" class="btn-sheet" href="#" target="_blank">📊 구글 시트 열기</a>
         <button class="btn-secondary" onclick="refreshPrizes()">🔄 새로고침</button>
+        <button class="btn-secondary" onclick="showSetupOverlay()">🔗 시트 연동</button>
         <button class="btn-danger"    onclick="confirmReset()">초기화</button>
       </div>
       <div class="api-url-display" id="api-url-display"></div>
-    </div>
-
-    <div class="admin-card">
-      <h3>API 설정 변경</h3>
-      <div class="input-group" style="margin-bottom:10px">
-        <input type="url" id="change-api-input" placeholder="새 Apps Script URL">
-      </div>
-      <div class="input-group" style="margin-bottom:10px">
-        <input type="url" id="change-sheet-input" placeholder="새 구글 시트 URL (선택)">
-      </div>
-      <button class="btn-secondary" onclick="changeApi()">변경 적용</button>
     </div>
   </div>
 </div>
@@ -429,6 +419,14 @@ const RANK_EMOJI = { '1등':'🥇', '2등':'🥈', '3등':'🥉' };
 const LS_API   = 'luckyDrawApiUrl';
 const LS_SHEET = 'luckyDrawSheetUrl';
 
+// ── DEFAULT PRIZES (API 미연동 시 사용) ──
+const DEFAULT_PRIZES = [
+  { id: '1', rank: '1등',   name: '에어팟 프로',        quantity: 1,  total: 1,  color: '#FFD700' },
+  { id: '2', rank: '2등',   name: '스타벅스 기프트카드', quantity: 3,  total: 3,  color: '#C0C0C0' },
+  { id: '3', rank: '3등',   name: '편의점 상품권',       quantity: 5,  total: 5,  color: '#CD7F32' },
+  { id: '4', rank: '참가상', name: '기념품',             quantity: 20, total: 20, color: '#4FC3F7' },
+];
+
 // ── STATE ──
 let prizes    = [];
 let history   = [];
@@ -436,11 +434,15 @@ let isDrawing = false;
 let drawCount = 0;
 let apiUrl    = localStorage.getItem(LS_API)   || '';
 let sheetUrl  = localStorage.getItem(LS_SHEET) || '';
-let stopCycling = null; // function to stop slot cycling
+let stopCycling = null;
 
 // ── INIT ──
 async function init() {
-  if (!apiUrl) { show('setup-overlay'); return; }
+  if (!apiUrl) {
+    prizes = DEFAULT_PRIZES.map(p => ({ ...p }));
+    updateUI();
+    return;
+  }
   await loadPrizes();
 }
 
@@ -453,8 +455,7 @@ async function loadPrizes() {
     hide('loading-overlay');
   } catch(e) {
     hide('loading-overlay');
-    showToast('오류: ' + e.message, 5000);
-    show('setup-overlay');
+    showToast('시트 연동 오류: ' + e.message, 5000);
   }
 }
 
@@ -468,6 +469,7 @@ function saveSetup() {
   localStorage.setItem(LS_API, url);
   if (sheet) localStorage.setItem(LS_SHEET, sheet);
   hide('setup-overlay');
+  toggleAdmin(); // 관리자 패널 닫기
   loadPrizes();
 }
 
@@ -672,9 +674,7 @@ function updateAdminUI() {
   if (sheetUrl) { sheetLink.href = sheetUrl; sheetLink.style.opacity = '1'; }
   else { sheetLink.href = '#'; sheetLink.style.opacity = '.4'; }
 
-  document.getElementById('api-url-display').textContent = apiUrl;
-  document.getElementById('change-api-input').value   = apiUrl;
-  document.getElementById('change-sheet-input').value = sheetUrl;
+  document.getElementById('api-url-display').textContent = apiUrl || '연동 없음 (기본 상품 사용 중)';
 }
 
 async function refreshPrizes() {
@@ -685,29 +685,28 @@ async function refreshPrizes() {
 
 async function confirmReset() {
   if (!confirm('모든 수량을 초기화하고 추첨 기록을 지우시겠습니까?')) return;
-  try {
-    await apiFetch({ action: 'reset' });
-    history = [];
-    drawCount = 0;
-    setSlotContent('<div class="slot-idle">버튼을 눌러 추첨하세요</div>');
-    await loadPrizes();
-    updateAdminUI();
-    showToast('✅ 초기화 완료');
-  } catch(e) {
-    showToast('초기화 중 오류가 발생했습니다');
+  history = [];
+  drawCount = 0;
+  setSlotContent('<div class="slot-idle">버튼을 눌러 추첨하세요</div>');
+  if (apiUrl) {
+    try {
+      await apiFetch({ action: 'reset' });
+      await loadPrizes();
+    } catch(e) {
+      showToast('시트 초기화 오류 — 로컬만 초기화됨', 3000);
+    }
+  } else {
+    prizes = DEFAULT_PRIZES.map(p => ({ ...p }));
   }
+  updateAdminUI();
+  updateUI();
+  showToast('✅ 초기화 완료');
 }
 
-function changeApi() {
-  const url   = document.getElementById('change-api-input').value.trim();
-  const sheet = document.getElementById('change-sheet-input').value.trim();
-  if (!url) { showToast('URL을 입력해주세요'); return; }
-  apiUrl   = url;
-  sheetUrl = sheet;
-  localStorage.setItem(LS_API, url);
-  localStorage.setItem(LS_SHEET, sheet);
-  loadPrizes().then(updateAdminUI);
-  showToast('✅ API URL 변경됨');
+function showSetupOverlay() {
+  document.getElementById('api-url-input').value   = apiUrl;
+  document.getElementById('sheet-url-input').value = sheetUrl;
+  show('setup-overlay');
 }
 
 // ── HELPERS ──
